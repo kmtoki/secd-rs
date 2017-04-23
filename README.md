@@ -22,8 +22,7 @@ cargo run <file>
 ```
 
 ## time
-this is first test time
-many use RefCell and clone()
+😱
 
 ```
 cargo run example/fib.lisp  191.92s user 0.46s system 99% cpu 3:13.34 total
