@@ -22,8 +22,13 @@ cargo run <file>
 ```
 
 ## time
-😱
+😓
 
 ```
-cargo run example/fib.lisp  191.92s user 0.46s system 99% cpu 3:13.34 total
+❯ time cargo run ../example/fib.lisp --release
+    Finished release [optimized] target(s) in 0.0 secs
+     Running `/Users/tokiya/Documents/rust/secd/target/release/secd ../example/fib.lisp`
+832040
+cargo run ../example/fib.lisp --release  12.99s user 0.06s system 99% cpu 13.081 total
 ```
+

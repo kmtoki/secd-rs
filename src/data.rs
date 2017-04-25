@@ -16,11 +16,6 @@ pub type Code  = RefCell<Vec<CodeOPInfo>>;
 pub type Env   = RefCell<HashMap<Rc<String>, Rc<Lisp>>>;
 pub type Dump  = RefCell<Vec<DumpOP>>;
 
-//pub type Stack = Vec<Rc<Lisp>>;
-//pub type Code  = Vec<CodeOPInfo>;
-//pub type Env   = HashMap<Rc<String>, Rc<Lisp>>;
-//pub type Dump  = Vec<DumpOP>;
-
 pub type Info = [usize; 2];
 
 #[derive(Debug, PartialEq)]
