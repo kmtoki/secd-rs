@@ -32,3 +32,4 @@ cargo run <file>
 cargo run ../example/fib.lisp --release  12.99s user 0.06s system 99% cpu 13.081 total
 ```
 
+[see also](https://github.com/KeenS/secd-rs/tree/non-cloning)
