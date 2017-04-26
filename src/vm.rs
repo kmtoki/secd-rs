@@ -104,22 +104,16 @@ impl SECD {
     }
 
 
-    fn run_let(&mut self, c: &CodeOPInfo, id: &String) -> VMResult {
-        if let Some(expr) = self.stack.pop() {
-            self.env.insert(id.clone(), expr);
-            return Ok(());
-        } else {
-            return self.error(c, "LET: stack is empty");
-        }
+    fn run_let(&mut self, _: &CodeOPInfo, id: &String) -> VMResult {
+        let expr = self.stack.pop().unwrap();
+        self.env.insert(id.clone(), expr);
+        return Ok(());
     }
 
-    fn run_ld(&mut self, c: &CodeOPInfo, id: &String) -> VMResult {
-        if let Some(expr) = self.env.get(id) {
-            self.stack.push(expr.clone());
-            return Ok(());
-        } else {
-            return self.error(c, format!("LD: found {}", id).as_str());
-        }
+    fn run_ld(&mut self, _: &CodeOPInfo, id: &String) -> VMResult {
+        let expr = self.env.get(id).unwrap();
+        self.stack.push(expr.clone());
+        return Ok(());
     }
 
     fn run_ldc(&mut self, _: &CodeOPInfo, lisp: &Rc<Lisp>) -> VMResult {
@@ -134,12 +128,10 @@ impl SECD {
     }
 
     fn run_ap(&mut self, c: &CodeOPInfo) -> VMResult {
-        let s = self.stack.pop();
-        if let Some(closure) = s {
-            if let Lisp::Closure(ref names, ref code, ref env) = *closure {
-                let s = self.stack.pop();
-                if let Some(list) = s {
-                    if let Lisp::List(ref vals) = *list {
+        match *self.stack.pop().unwrap() {
+            Lisp::Closure(ref names, ref code, ref env) => {
+                match *self.stack.pop().unwrap() {
+                    Lisp::List(ref vals) => {
                         let mut env = env.clone();
                         for i in 0..names.len() {
                             env.insert(names[i].clone(), vals[i].clone());
@@ -155,27 +147,20 @@ impl SECD {
                         self.code = code.clone();
 
                         return Ok(());
-                    } else {
-                        return self.error(c, "AP: expected List");
                     }
-                } else {
-                    return self.error(c, "AP: stack is empty");
+                    _ => return self.error(c, "AP: expected List"),
                 }
-            } else {
-                return self.error(c, "AP: expected Closure");
             }
-        } else {
-            return self.error(c, "AP: stack is empty");
+
+            _ => return self.error(c, "AP: expected Closure"),
         }
     }
 
     fn run_rap(&mut self, c: &CodeOPInfo) -> VMResult {
-        let s = self.stack.pop();
-        if let Some(closure) = s {
-            if let Lisp::Closure(ref names, ref code, ref env) = *closure {
-                let ss = self.stack.pop();
-                if let Some(list) = ss {
-                    if let Lisp::List(ref vals) = *list {
+        match *self.stack.pop().unwrap() {
+            Lisp::Closure(ref names, ref code, ref env) => {
+                match *self.stack.pop().unwrap() {
+                    Lisp::List(ref vals) => {
                         let mut env = env.clone();
                         for i in 0..names.len() {
                             env.insert(names[i].clone(), vals[i].clone());
@@ -191,213 +176,141 @@ impl SECD {
                         self.code = code.clone();
 
                         return Ok(());
-                    } else {
-                        return self.error(c, "RAP: expected List");
                     }
-                } else {
-                    return self.error(c, "RAP: stack is empty");
+
+                    _ => return self.error(c, "RAP: expected List"),
                 }
-            } else {
-                return self.error(c, "RAP: expected Closure");
             }
-        } else {
-            return self.error(c, "RAP: stack is empty");
+
+            _ => return self.error(c, "RAP: expected Closure"),
         }
     }
 
     fn run_ret(&mut self, c: &CodeOPInfo) -> VMResult {
-        let s = self.stack.pop();
-        if let Some(val) = s {
-            if let Some(DumpOP::DumpAP(ref stack, ref env, ref code)) = self.dump.pop() {
-
-                self.stack = stack.clone();
-                self.env = env.clone();
+        let a = self.stack.pop().unwrap();
+        match self.dump.pop().unwrap() {
+            DumpOP::DumpAP(stack, env, code) => {
+                self.stack = stack;
+                self.env = env;
                 self.code = code.clone();
 
-                self.stack.push(val.clone());
+                self.stack.push(a.clone());
 
                 return Ok(());
-            } else {
-                return self.error(c, "RET: dump is empty");
             }
-        } else {
-            return self.error(c, "RET: stack is empty");
+
+            _ => return self.error(c, "RET: expected DumpAP"),
         }
     }
 
-    fn run_args(&mut self, c: &CodeOPInfo, n: usize) -> VMResult {
+    fn run_args(&mut self, _: &CodeOPInfo, n: usize) -> VMResult {
         let mut ls = vec![];
         for _ in 0..n {
-            match self.stack.pop() {
-                None => {
-                    return self.error(c, &format!("ARGS: {}", n));
-                }
-
-                Some(a) => {
-                    ls.insert(0, a);
-                }
-            }
+            ls.insert(0, self.stack.pop().unwrap());
         }
 
         self.stack.push(Rc::new(Lisp::List(ls)));
         return Ok(());
     }
 
-    fn run_puts(&mut self, c: &CodeOPInfo) -> VMResult {
-        match self.stack.last() {
-            None => {
-                return self.error(c, "PUTS: expected args");
-            }
-
-            Some(a) => {
-                println!("{}", **a);
-                return Ok(());
-            }
-        }
+    fn run_puts(&mut self, _: &CodeOPInfo) -> VMResult {
+        println!("{}", *self.stack.last().unwrap());
+        return Ok(());
     }
 
     fn run_sel(&mut self, c: &CodeOPInfo, t: &Code, f: &Code) -> VMResult {
-        let s = self.stack.pop();
-        if let Some(b) = s {
-            let code = match *b {
-                Lisp::True => t,
-                Lisp::False => f,
-                _ => return self.error(c, "SEL: expected bool"),
-            };
+        let b = self.stack.pop().unwrap();
+        let code = match *b {
+            Lisp::True => t,
+            Lisp::False => f,
+            _ => return self.error(c, "SEL: expected bool"),
+        };
 
-            self.dump.push(DumpOP::DumpSEL(self.code.clone()));
+        self.dump.push(DumpOP::DumpSEL(self.code.clone()));
 
+        self.code = code.clone();
+
+        return Ok(());
+    }
+
+    fn run_join(&mut self, c: &CodeOPInfo) -> VMResult {
+        if let DumpOP::DumpSEL(ref code) = self.dump.pop().unwrap() {
             self.code = code.clone();
 
             return Ok(());
         } else {
-            return self.error(c, "SEL: stack is empty");
+            return self.error(c, "JOIN: expected DumpSEL");
         }
     }
 
-    fn run_join(&mut self, c: &CodeOPInfo) -> VMResult {
-        let d = self.dump.pop();
-        if let Some(dump) = d {
-            if let DumpOP::DumpSEL(ref code) = dump {
-                self.code = code.clone();
+    fn run_eq(&mut self, _: &CodeOPInfo) -> VMResult {
+        let a = self.stack.pop().unwrap();
+        let b = self.stack.pop().unwrap();
+        self.stack
+            .push(Rc::new(if a == b { Lisp::True } else { Lisp::False }));
 
-                return Ok(());
-            } else {
-                return self.error(c, "JOIN: expected DumpSEL");
-            }
-        } else {
-            return self.error(c, "JOIN: dump is empty");
-        }
-    }
-
-    fn run_eq(&mut self, c: &CodeOPInfo) -> VMResult {
-        let s = self.stack.pop();
-        if let Some(a) = s {
-            let ss = self.stack.pop();
-            if let Some(b) = ss {
-                self.stack
-                    .push(Rc::new(if a == b { Lisp::True } else { Lisp::False }));
-
-                return Ok(());
-            } else {
-                return self.error(c, "EQ: stack is empty");
-            }
-        } else {
-            return self.error(c, "EQ: stack is empty");
-        }
+        return Ok(());
     }
 
     fn run_add(&mut self, c: &CodeOPInfo) -> VMResult {
-        let s = self.stack.pop();
-        if let Some(a) = s {
-            if let Lisp::Int(n) = *a {
-                let ss = self.stack.pop();
-                if let Some(b) = ss {
-                    if let Lisp::Int(m) = *b {
-                        self.stack.push(Rc::new(Lisp::Int(m + n)));
+        let a = self.stack.pop().unwrap();
+        if let Lisp::Int(n) = *a {
+            let b = self.stack.pop().unwrap();
+            if let Lisp::Int(m) = *b {
+                self.stack.push(Rc::new(Lisp::Int(m + n)));
 
-                        return Ok(());
-                    } else {
-                        return self.error(c, "ADD: expected int");
-                    }
-                } else {
-                    return self.error(c, "ADD: stack is empty");
-                }
+                return Ok(());
             } else {
                 return self.error(c, "ADD: expected int");
             }
         } else {
-            return self.error(c, "ADD: stack is empty");
+            return self.error(c, "ADD: expected int");
         }
     }
 
     fn run_sub(&mut self, c: &CodeOPInfo) -> VMResult {
-        let s = self.stack.pop();
-        if let Some(a) = s {
-            if let Lisp::Int(n) = *a {
-                let ss = self.stack.pop();
-                if let Some(b) = ss {
-                    if let Lisp::Int(o) = *b {
-                        self.stack.push(Rc::new(Lisp::Int(o - n)));
+        let a = self.stack.pop().unwrap();
+        if let Lisp::Int(n) = *a {
+            let b = self.stack.pop().unwrap();
+            if let Lisp::Int(o) = *b {
+                self.stack.push(Rc::new(Lisp::Int(o - n)));
 
-                        return Ok(());
-                    } else {
-                        return self.error(c, "SUB: expected int");
-                    }
-                } else {
-                    return self.error(c, "SUB: stack is empty");
-                }
+                return Ok(());
             } else {
                 return self.error(c, "SUB: expected int");
             }
         } else {
-            return self.error(c, "SUB: stack is empty");
+            return self.error(c, "SUB: expected int");
         }
     }
 
-    fn run_cons(&mut self, c: &CodeOPInfo) -> VMResult {
-        let a = self.stack.pop();
-        if let Some(a) = a {
-            let b = self.stack.pop();
-            if let Some(b) = b {
-                self.stack.push(Rc::new(Lisp::Cons(b, a)));
+    fn run_cons(&mut self, _: &CodeOPInfo) -> VMResult {
+        let a = self.stack.pop().unwrap();
+        let b = self.stack.pop().unwrap();
+        self.stack.push(Rc::new(Lisp::Cons(b, a)));
 
-                return Ok(());
-            } else {
-                return self.error(c, "CONS: stack is empty");
-            }
-        } else {
-            return self.error(c, "CONS: stack is empty");
-        }
+        return Ok(());
     }
 
     fn run_car(&mut self, c: &CodeOPInfo) -> VMResult {
-        let a = self.stack.pop();
-        if let Some(a) = a {
-            if let Lisp::Cons(ref car, _) = *a {
-                self.stack.push(car.clone());
+        let a = self.stack.pop().unwrap();
+        if let Lisp::Cons(ref car, _) = *a {
+            self.stack.push(car.clone());
 
-                return Ok(());
-            } else {
-                return self.error(c, "CAR: expected Cons");
-            }
+            return Ok(());
         } else {
-            return self.error(c, "CAR: stack is empty");
+            return self.error(c, "CAR: expected Cons");
         }
     }
 
     fn run_cdr(&mut self, c: &CodeOPInfo) -> VMResult {
-        let a = self.stack.pop();
-        if let Some(a) = a {
-            if let Lisp::Cons(_, ref cdr) = *a {
-                self.stack.push(cdr.clone());
+        let a = self.stack.pop().unwrap();
+        if let Lisp::Cons(_, ref cdr) = *a {
+            self.stack.push(cdr.clone());
 
-                return Ok(());
-            } else {
-                return self.error(c, "CDR: expected Cons");
-            }
+            return Ok(());
         } else {
-            return self.error(c, "CDR: stack is empty");
+            return self.error(c, "CDR: expected Cons");
         }
     }
 }
