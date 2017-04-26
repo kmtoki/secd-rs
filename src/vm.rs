@@ -17,8 +17,8 @@ impl SECD {
                };
     }
 
-    fn error(&self, c: &CodeOPInfo, msg: &str) -> VMResult {
-        return Err(From::from(format!("{}:{}:vm error: {}", c.info[0], c.info[1], msg)));
+    fn error(&self, i: Info, msg: &str) -> VMResult {
+        return Err(From::from(format!("{}:{}:vm error: {}", i[0], i[1], msg)));
     }
 
     pub fn run(&mut self) -> Result<Rc<Lisp>, Box<Error>> {
@@ -30,72 +30,72 @@ impl SECD {
         while self.code.len() > 0 {
             let c = self.code.remove(0);
             match c.op { 
-                CodeOP::LET(ref id) => {
-                    try!(self.run_let(&c, id));
+                CodeOP::LET(id) => {
+                    try!(self.run_let(c.info, id));
                 }
 
-                CodeOP::LD(ref id) => {
-                    try!(self.run_ld(&c, id));
+                CodeOP::LD(id) => {
+                    try!(self.run_ld(c.info, id));
                 }
 
-                CodeOP::LDC(ref lisp) => {
-                    try!(self.run_ldc(&c, lisp));
+                CodeOP::LDC(lisp) => {
+                    try!(self.run_ldc(c.info, lisp));
                 }
 
-                CodeOP::LDF(ref names, ref code) => {
-                    try!(self.run_ldf(&c, names, code));
+                CodeOP::LDF(names, code) => {
+                    try!(self.run_ldf(c.info, names, code));
                 }
 
                 CodeOP::RET => {
-                    try!(self.run_ret(&c));
+                    try!(self.run_ret(c.info));
                 }
 
                 CodeOP::AP => {
-                    try!(self.run_ap(&c));
+                    try!(self.run_ap(c.info));
                 }
 
                 CodeOP::RAP => {
-                    try!(self.run_rap(&c));
+                    try!(self.run_rap(c.info));
                 }
 
                 CodeOP::ARGS(n) => {
-                    try!(self.run_args(&c, n));
+                    try!(self.run_args(c.info, n));
                 }
 
                 CodeOP::PUTS => {
-                    try!(self.run_puts(&c));
+                    try!(self.run_puts(c.info));
                 }
 
                 CodeOP::SEL(ref t, ref f) => {
-                    try!(self.run_sel(&c, t, f));
+                    try!(self.run_sel(c.info, t, f));
                 }
 
                 CodeOP::JOIN => {
-                    try!(self.run_join(&c));
+                    try!(self.run_join(c.info));
                 }
 
                 CodeOP::EQ => {
-                    try!(self.run_eq(&c));
+                    try!(self.run_eq(c.info));
                 }
 
                 CodeOP::ADD => {
-                    try!(self.run_add(&c));
+                    try!(self.run_add(c.info));
                 }
 
                 CodeOP::SUB => {
-                    try!(self.run_sub(&c));
+                    try!(self.run_sub(c.info));
                 }
 
                 CodeOP::CONS => {
-                    try!(self.run_cons(&c));
+                    try!(self.run_cons(c.info));
                 }
 
                 CodeOP::CAR => {
-                    try!(self.run_car(&c));
+                    try!(self.run_car(c.info));
                 }
 
                 CodeOP::CDR => {
-                    try!(self.run_cdr(&c));
+                    try!(self.run_cdr(c.info));
                 }
             }
         }
@@ -104,30 +104,30 @@ impl SECD {
     }
 
 
-    fn run_let(&mut self, _: &CodeOPInfo, id: &String) -> VMResult {
+    fn run_let(&mut self, _: Info, id: String) -> VMResult {
         let expr = self.stack.pop().unwrap();
-        self.env.insert(id.clone(), expr);
+        self.env.insert(id, expr);
         return Ok(());
     }
 
-    fn run_ld(&mut self, _: &CodeOPInfo, id: &String) -> VMResult {
-        let expr = self.env.get(id).unwrap();
+    fn run_ld(&mut self, _: Info, id: String) -> VMResult {
+        let expr = self.env.get(&id).unwrap();
         self.stack.push(expr.clone());
         return Ok(());
     }
 
-    fn run_ldc(&mut self, _: &CodeOPInfo, lisp: &Rc<Lisp>) -> VMResult {
-        self.stack.push(lisp.clone());
+    fn run_ldc(&mut self, _: Info, lisp: Rc<Lisp>) -> VMResult {
+        self.stack.push(lisp);
         return Ok(());
     }
 
-    fn run_ldf(&mut self, _: &CodeOPInfo, names: &Vec<String>, code: &Code) -> VMResult {
+    fn run_ldf(&mut self, _: Info, names: Vec<String>, code: Code) -> VMResult {
         self.stack
-            .push(Rc::new(Lisp::Closure(names.clone(), code.clone(), self.env.clone())));
+            .push(Rc::new(Lisp::Closure(names, code, self.env.clone())));
         return Ok(());
     }
 
-    fn run_ap(&mut self, c: &CodeOPInfo) -> VMResult {
+    fn run_ap(mut self, c: Info) -> VMResult {
         match *self.stack.pop().unwrap() {
             Lisp::Closure(ref names, ref code, ref env) => {
                 match *self.stack.pop().unwrap() {
@@ -156,7 +156,7 @@ impl SECD {
         }
     }
 
-    fn run_rap(&mut self, c: &CodeOPInfo) -> VMResult {
+    fn run_rap(&mut self, c: Info) -> VMResult {
         match *self.stack.pop().unwrap() {
             Lisp::Closure(ref names, ref code, ref env) => {
                 match *self.stack.pop().unwrap() {
@@ -186,7 +186,7 @@ impl SECD {
         }
     }
 
-    fn run_ret(&mut self, c: &CodeOPInfo) -> VMResult {
+    fn run_ret(&mut self, c: Info) -> VMResult {
         let a = self.stack.pop().unwrap();
         match self.dump.pop().unwrap() {
             DumpOP::DumpAP(stack, env, code) => {
@@ -203,7 +203,7 @@ impl SECD {
         }
     }
 
-    fn run_args(&mut self, _: &CodeOPInfo, n: usize) -> VMResult {
+    fn run_args(&mut self, _: Info, n: usize) -> VMResult {
         let mut ls = vec![];
         for _ in 0..n {
             ls.insert(0, self.stack.pop().unwrap());
@@ -213,12 +213,12 @@ impl SECD {
         return Ok(());
     }
 
-    fn run_puts(&mut self, _: &CodeOPInfo) -> VMResult {
+    fn run_puts(&mut self, _: Info) -> VMResult {
         println!("{}", *self.stack.last().unwrap());
         return Ok(());
     }
 
-    fn run_sel(&mut self, c: &CodeOPInfo, t: &Code, f: &Code) -> VMResult {
+    fn run_sel(&mut self, c: Info, t: &Code, f: &Code) -> VMResult {
         let b = self.stack.pop().unwrap();
         let code = match *b {
             Lisp::True => t,
@@ -233,7 +233,7 @@ impl SECD {
         return Ok(());
     }
 
-    fn run_join(&mut self, c: &CodeOPInfo) -> VMResult {
+    fn run_join(&mut self, c: Info) -> VMResult {
         if let DumpOP::DumpSEL(ref code) = self.dump.pop().unwrap() {
             self.code = code.clone();
 
@@ -243,7 +243,7 @@ impl SECD {
         }
     }
 
-    fn run_eq(&mut self, _: &CodeOPInfo) -> VMResult {
+    fn run_eq(&mut self, _: Info) -> VMResult {
         let a = self.stack.pop().unwrap();
         let b = self.stack.pop().unwrap();
         self.stack
@@ -252,7 +252,7 @@ impl SECD {
         return Ok(());
     }
 
-    fn run_add(&mut self, c: &CodeOPInfo) -> VMResult {
+    fn run_add(&mut self, c: Info) -> VMResult {
         let a = self.stack.pop().unwrap();
         if let Lisp::Int(n) = *a {
             let b = self.stack.pop().unwrap();
@@ -268,7 +268,7 @@ impl SECD {
         }
     }
 
-    fn run_sub(&mut self, c: &CodeOPInfo) -> VMResult {
+    fn run_sub(&mut self, c: Info) -> VMResult {
         let a = self.stack.pop().unwrap();
         if let Lisp::Int(n) = *a {
             let b = self.stack.pop().unwrap();
@@ -284,7 +284,7 @@ impl SECD {
         }
     }
 
-    fn run_cons(&mut self, _: &CodeOPInfo) -> VMResult {
+    fn run_cons(&mut self, _: Info) -> VMResult {
         let a = self.stack.pop().unwrap();
         let b = self.stack.pop().unwrap();
         self.stack.push(Rc::new(Lisp::Cons(b, a)));
@@ -292,7 +292,7 @@ impl SECD {
         return Ok(());
     }
 
-    fn run_car(&mut self, c: &CodeOPInfo) -> VMResult {
+    fn run_car(&mut self, c: Info) -> VMResult {
         let a = self.stack.pop().unwrap();
         if let Lisp::Cons(ref car, _) = *a {
             self.stack.push(car.clone());
@@ -303,7 +303,7 @@ impl SECD {
         }
     }
 
-    fn run_cdr(&mut self, c: &CodeOPInfo) -> VMResult {
+    fn run_cdr(&mut self, c: Info) -> VMResult {
         let a = self.stack.pop().unwrap();
         if let Lisp::Cons(_, ref cdr) = *a {
             self.stack.push(cdr.clone());
