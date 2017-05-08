@@ -196,12 +196,9 @@ impl SECD {
     }
 
     fn run_args(&mut self, _: &Info, n: usize) -> VMResult {
-        let mut ls = Vec::new();
-        for _ in 0..n {
-            ls.insert(0, self.stack.pop().unwrap());
-        }
-
-        self.stack.push(Rc::new(Lisp::List(ls)));
+        let slen = self.stack.len();
+        let args = self.stack.split_off(slen - n);
+        self.stack.push(Rc::new(Lisp::List(args)));
         Ok(())
     }
 
