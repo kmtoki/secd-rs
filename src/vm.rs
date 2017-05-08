@@ -127,7 +127,7 @@ impl SECD {
         return Ok(());
     }
 
-    fn run_ap(mut self, c: Info) -> VMResult {
+    fn run_ap(&mut self, c: Info) -> VMResult {
         match *self.stack.pop().unwrap() {
             Lisp::Closure(ref names, ref code, ref env) => {
                 match *self.stack.pop().unwrap() {
