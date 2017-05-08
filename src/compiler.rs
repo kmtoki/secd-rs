@@ -12,95 +12,48 @@ type CompilerResult = Result<(), Box<Error>>;
 
 impl Compiler {
     pub fn new() -> Self {
-        return Compiler {
-                   code: vec![],
-                   letrec_id_list: vec![],
-               };
+        Compiler {
+            code: vec![],
+            letrec_id_list: vec![],
+        }
     }
 
     fn error(&self, ast: &AST, msg: &str) -> CompilerResult {
-        return Err(From::from(format!("{}:{}:compile error: {}", ast.info[0], ast.info[1], msg)));
+        Err(From::from(format!("{}:{}:compile error: {}", ast.info[0], ast.info[1], msg)))
     }
 
     pub fn compile(&mut self, ast: &AST) -> Result<Code, Box<Error>> {
         try!(self.compile_(ast));
-        return Ok(self.code.clone());
+        Ok(self.code.clone())
     }
 
     pub fn compile_(&mut self, ast: &AST) -> CompilerResult {
         match ast.sexpr {
-            SExpr::Int(n) => {
-                return self.compile_int(ast, n);
-            }
-
-            SExpr::Atom(ref id) => {
-                return self.compile_atom(ast, id);
-            }
-
+            SExpr::Int(n) => self.compile_int(ast, n),
+            SExpr::Atom(ref id) => self.compile_atom(ast, id),
             SExpr::List(ref ls) => {
                 if ls.len() == 0 {
-                    return self.compile_nil(ast);
+                    self.compile_nil(ast)
                 } else {
                     match ls[0].sexpr {
-                        SExpr::Int(_) => {
-                            return self.error(&ls[0], "apply unexpect int");
-                        }
-
+                        SExpr::Int(_) => self.error(&ls[0], "apply unexpect int"),
                         SExpr::Atom(ref id) => {
                             match id.as_str() {
-                                "lambda" => {
-                                    return self.compile_lambda(ls);
-                                }
-
-                                "let" => {
-                                    return self.compile_let(ls);
-                                }
-
-                                "letrec" => {
-                                    return self.compile_letrec(ls);
-                                }
-
-                                "puts" => {
-                                    return self.compile_puts(ls);
-                                }
-
-                                "if" => {
-                                    return self.compile_if(ls);
-                                }
-
-                                "eq" => {
-                                    return self.compile_eq(ls);
-                                }
-
-                                "+" => {
-                                    return self.compile_add(ls);
-                                }
-
-                                "-" => {
-                                    return self.compile_sub(ls);
-                                }
-
-                                "cons" => {
-                                    return self.compile_cons(ls);
-                                }
-
-                                "car" => {
-                                    return self.compile_car(ls);
-                                }
-
-                                "cdr" => {
-                                    return self.compile_cdr(ls);
-                                }
-
-                                _ => {
-                                    return self.compile_apply(ls);
-                                }
+                                "lambda" => self.compile_lambda(ls),
+                                "let" => self.compile_let(ls),
+                                "letrec" => self.compile_letrec(ls),
+                                "puts" => self.compile_puts(ls),
+                                "if" => self.compile_if(ls),
+                                "eq" => self.compile_eq(ls),
+                                "+" => self.compile_add(ls),
+                                "-" => self.compile_sub(ls),
+                                "cons" => self.compile_cons(ls),
+                                "car" => self.compile_car(ls),
+                                "cdr" => self.compile_cdr(ls),
+                                _ => self.compile_apply(ls),
                             }
                         }
-
-                        SExpr::List(_) => {
-                            return self.compile_apply(&ls);
-                        }
+                        SExpr::List(_) => self.compile_apply(&ls),
                     }
                 }
             }
@@ -113,7 +66,7 @@ impl Compiler {
                       info: ast.info,
                       op: CodeOP::LDC(Rc::new(Lisp::Int(n))),
                   });
-        return Ok(());
+        Ok(())
     }
 
     fn compile_atom(&mut self, ast: &AST, id: &String) -> CompilerResult {
@@ -151,7 +104,7 @@ impl Compiler {
             }
         }
 
-        return Ok(());
+        Ok(())
     }
 
     fn compile_nil(&mut self, ast: &AST) -> CompilerResult {
@@ -160,7 +113,7 @@ impl Compiler {
                       info: ast.info,
                       op: CodeOP::LDC(Rc::new(Lisp::Nil)),
                   });
-        return Ok(());
+        Ok(())
     }
 
     fn compile_lambda(&mut self, ls: &Vec<AST>) -> CompilerResult {
@@ -208,7 +161,7 @@ impl Compiler {
                       op: CodeOP::LDF(args, body.code),
                   });
 
-        return Ok(());
+        Ok(())
     }
 
     fn compile_let(&mut self, ls: &Vec<AST>) -> CompilerResult {
@@ -232,7 +185,7 @@ impl Compiler {
 
         try!(self.compile_(&ls[3]));
 
-        return Ok(());
+        Ok(())
     }
 
     fn compile_letrec(&mut self, ls: &Vec<AST>) -> CompilerResult {
@@ -255,7 +208,7 @@ impl Compiler {
                   });
         try!(self.compile_(&ls[3]));
 
-        return Ok(());
+        Ok(())
     }
 
     fn compile_puts(&mut self, ls: &Vec<AST>) -> CompilerResult {
@@ -269,7 +222,7 @@ impl Compiler {
                       info: ls[0].info,
                       op: CodeOP::PUTS,
                   });
-        return Ok(());
+        Ok(())
     }
 
 
@@ -311,7 +264,7 @@ impl Compiler {
             }
         }
 
-        return Ok(());
+        Ok(())
     }
 
     fn compile_if(&mut self, ls: &Vec<AST>) -> CompilerResult {
@@ -346,7 +299,7 @@ impl Compiler {
                   });
 
 
-        return Ok(());
+        Ok(())
     }
 
 
@@ -363,7 +316,7 @@ impl Compiler {
                       op: CodeOP::EQ,
                   });
 
-        return Ok(());
+        Ok(())
     }
 
     fn compile_add(&mut self, ls: &Vec<AST>) -> CompilerResult {
@@ -379,7 +332,7 @@ impl Compiler {
                       op: CodeOP::ADD,
                   });
 
-        return Ok(());
+        Ok(())
     }
 
     fn compile_sub(&mut self, ls: &Vec<AST>) -> CompilerResult {
@@ -395,7 +348,7 @@ impl Compiler {
                       op: CodeOP::SUB,
                   });
 
-        return Ok(());
+        Ok(())
     }
 
     fn compile_cons(&mut self, ls: &Vec<AST>) -> CompilerResult {
@@ -411,7 +364,7 @@ impl Compiler {
                       op: CodeOP::CONS,
                   });
 
-        return Ok(());
+        Ok(())
     }
 
     fn compile_car(&mut self, ls: &Vec<AST>) -> CompilerResult {
@@ -426,7 +379,7 @@ impl Compiler {
                       op: CodeOP::CAR,
                   });
 
-        return Ok(());
+        Ok(())
     }
 
     fn compile_cdr(&mut self, ls: &Vec<AST>) -> CompilerResult {
@@ -441,6 +394,6 @@ impl Compiler {
                       op: CodeOP::CDR,
                   });
 
-        return Ok(());
+        Ok(())
     }
 }

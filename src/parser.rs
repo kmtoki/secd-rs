@@ -26,11 +26,11 @@ fn is_id(c: char) -> bool {
 
 impl Parser {
     pub fn new(s: &String) -> Parser {
-        return Parser {
-                   src: s.clone(),
-                   pos: 0,
-                   info: [1; 2],
-               };
+        Parser {
+            src: s.clone(),
+            pos: 0,
+            info: [1; 2],
+        }
     }
 
     fn inc_line(&mut self) {
@@ -151,15 +151,15 @@ impl Parser {
             self.info = prev_info;
         }
 
-        return t;
+        t
     }
 
     pub fn next(&mut self) -> LexerResult {
-        return self.lex(false);
+        self.lex(false)
     }
 
     pub fn peek(&mut self) -> LexerResult {
-        return self.lex(true);
+        self.lex(true)
     }
 
     pub fn parse(&mut self) -> ParserResult {
@@ -217,9 +217,9 @@ impl Parser {
         }
 
         if ps > 0 {
-            return Err(From::from("many '('".to_string()));
+            Err(From::from("many '('".to_string()))
         } else {
-            return Ok(list.pop().unwrap().pop().unwrap());
+            Ok(list.pop().unwrap().pop().unwrap())
         }
     }
 }

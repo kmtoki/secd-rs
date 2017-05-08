@@ -88,7 +88,7 @@ impl fmt::Display for AST {
                         write!(f, "{} ", list[i]).unwrap();
                     }
                 }
-                return write!(f, ")");
+                write!(f, ")")
             }
         }
     }
@@ -96,7 +96,7 @@ impl fmt::Display for AST {
 
 impl PartialEq for CodeOPInfo {
     fn eq(&self, a: &CodeOPInfo) -> bool {
-        return self.op == a.op;
+        self.op == a.op
     }
 }
 
