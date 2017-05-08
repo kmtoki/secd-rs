@@ -32,7 +32,7 @@ impl Compiler {
             SExpr::Int(n) => self.compile_int(ast, n),
             SExpr::Atom(ref id) => self.compile_atom(ast, id),
             SExpr::List(ref ls) => {
-                if ls.len() == 0 {
+                if ls.is_empty() {
                     self.compile_nil(ast)
                 } else {
                     match ls[0].sexpr {
