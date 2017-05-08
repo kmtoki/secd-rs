@@ -10,10 +10,10 @@ type VMResult = Result<(), Box<Error>>;
 impl SECD {
     pub fn new(c: Code) -> SECD {
         SECD {
-            stack: vec![],
+            stack: Vec::new(),
             env: HashMap::new(),
             code: c,
-            dump: vec![],
+            dump: Vec::new(),
         }
     }
 
@@ -142,7 +142,7 @@ impl SECD {
                                                  self.env.clone(),
                                                  self.code.clone()));
 
-                        self.stack = vec![];
+                        self.stack = Vec::new();
                         self.env = env;
                         self.code = code.clone();
                     }
@@ -170,7 +170,7 @@ impl SECD {
                                                  self.env.clone(),
                                                  self.code.clone()));
 
-                        self.stack = vec![];
+                        self.stack = Vec::new();
                         self.env.extend(env);
                         self.code = code.clone();
                     }
@@ -202,7 +202,7 @@ impl SECD {
     }
 
     fn run_args(&mut self, _: Info, n: usize) -> VMResult {
-        let mut ls = vec![];
+        let mut ls = Vec::new();
         for _ in 0..n {
             ls.insert(0, self.stack.pop().unwrap());
         }

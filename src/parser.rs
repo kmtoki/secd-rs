@@ -164,7 +164,7 @@ impl Parser {
 
     pub fn parse(&mut self) -> ParserResult {
         let mut ps = 0;
-        let mut list: Vec<Vec<AST>> = vec![vec![]];
+        let mut list: Vec<Vec<AST>> = vec![Vec::new()];
 
         loop {
             match self.next()? {
@@ -191,7 +191,7 @@ impl Parser {
                         }
 
                         "(" => {
-                            list.push(vec![]);
+                            list.push(Vec::new());
                             ps += 1;
                         }
 

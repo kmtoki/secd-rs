@@ -13,8 +13,8 @@ type CompilerResult = Result<(), Box<Error>>;
 impl Compiler {
     pub fn new() -> Self {
         Compiler {
-            code: vec![],
-            letrec_id_list: vec![],
+            code: Vec::new(),
+            letrec_id_list: Vec::new(),
         }
     }
 
@@ -121,7 +121,7 @@ impl Compiler {
             return self.error(&ls[0], "lambda syntax");
         }
 
-        let mut args: Vec<String> = vec![];
+        let mut args: Vec<String> = Vec::new();
         match ls[1].sexpr {
             SExpr::Atom(ref a) => {
                 args.push(a.clone());
