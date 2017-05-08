@@ -22,7 +22,7 @@ impl SECD {
     }
 
     pub fn run(&mut self) -> Result<Rc<Lisp>, Box<Error>> {
-        try!(self.run_());
+        self.run_()?;
         Ok(self.stack.last().unwrap().clone())
     }
 
@@ -31,71 +31,71 @@ impl SECD {
             let c = self.code.remove(0);
             match c.op {
                 CodeOP::LET(id) => {
-                    try!(self.run_let(c.info, id));
+                    self.run_let(c.info, id)?;
                 }
 
                 CodeOP::LD(id) => {
-                    try!(self.run_ld(c.info, id));
+                    self.run_ld(c.info, id)?;
                 }
 
                 CodeOP::LDC(lisp) => {
-                    try!(self.run_ldc(c.info, lisp));
+                    self.run_ldc(c.info, lisp)?;
                 }
 
                 CodeOP::LDF(names, code) => {
-                    try!(self.run_ldf(c.info, names, code));
+                    self.run_ldf(c.info, names, code)?;
                 }
 
                 CodeOP::RET => {
-                    try!(self.run_ret(c.info));
+                    self.run_ret(c.info)?;
                 }
 
                 CodeOP::AP => {
-                    try!(self.run_ap(c.info));
+                    self.run_ap(c.info)?;
                 }
 
                 CodeOP::RAP => {
-                    try!(self.run_rap(c.info));
+                    self.run_rap(c.info)?;
                 }
 
                 CodeOP::ARGS(n) => {
-                    try!(self.run_args(c.info, n));
+                    self.run_args(c.info, n)?;
                 }
 
                 CodeOP::PUTS => {
-                    try!(self.run_puts(c.info));
+                    self.run_puts(c.info)?;
                 }
 
                 CodeOP::SEL(ref t, ref f) => {
-                    try!(self.run_sel(c.info, t, f));
+                    self.run_sel(c.info, t, f)?;
                 }
 
                 CodeOP::JOIN => {
-                    try!(self.run_join(c.info));
+                    self.run_join(c.info)?;
                 }
 
                 CodeOP::EQ => {
-                    try!(self.run_eq(c.info));
+                    self.run_eq(c.info)?;
                 }
 
                 CodeOP::ADD => {
-                    try!(self.run_add(c.info));
+                    self.run_add(c.info)?;
                 }
 
                 CodeOP::SUB => {
-                    try!(self.run_sub(c.info));
+                    self.run_sub(c.info)?;
                 }
 
                 CodeOP::CONS => {
-                    try!(self.run_cons(c.info));
+                    self.run_cons(c.info)?;
                 }
 
                 CodeOP::CAR => {
-                    try!(self.run_car(c.info));
+                    self.run_car(c.info)?;
                 }
 
                 CodeOP::CDR => {
-                    try!(self.run_cdr(c.info));
+                    self.run_cdr(c.info)?;
                 }
             }
         }

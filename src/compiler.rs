@@ -23,7 +23,7 @@ impl Compiler {
     }
 
     pub fn compile(&mut self, ast: &AST) -> Result<Code, Box<Error>> {
-        try!(self.compile_(ast));
+        self.compile_(ast)?;
         Ok(self.code.clone())
     }
 
@@ -148,7 +148,7 @@ impl Compiler {
 
         let mut body = Compiler::new();
         body.letrec_id_list = self.letrec_id_list.clone();
-        try!(body.compile_(&ls[2]));
+        body.compile_(&ls[2])?;
         body.code
             .push(CodeOPInfo {
                       info: ls[0].info,
@@ -176,14 +176,14 @@ impl Compiler {
 
         self.letrec_id_list.retain(|a| *a != id);
 
-        try!(self.compile_(&ls[2]));
+        self.compile_(&ls[2])?;
         self.code
             .push(CodeOPInfo {
                       info: ls[0].info,
                       op: CodeOP::LET(id),
                   });
 
-        try!(self.compile_(&ls[3]));
+        self.compile_(&ls[3])?;
 
         Ok(())
     }
@@ -200,13 +200,13 @@ impl Compiler {
 
         self.letrec_id_list.push(id.clone());
 
-        try!(self.compile_(&ls[2]));
+        self.compile_(&ls[2])?;
         self.code
             .push(CodeOPInfo {
                       info: ls[0].info,
                       op: CodeOP::LET(id),
                   });
-        try!(self.compile_(&ls[3]));
+        self.compile_(&ls[3])?;
 
         Ok(())
     }
@@ -216,7 +216,7 @@ impl Compiler {
             return self.error(&ls[0], "puts syntax");
         }
 
-        try!(self.compile_(&ls[1]));
+        self.compile_(&ls[1])?;
         self.code
             .push(CodeOPInfo {
                       info: ls[0].info,
@@ -229,14 +229,14 @@ impl Compiler {
     fn compile_apply(&mut self, ls: &Vec<AST>) -> CompilerResult {
         let (lambda, args) = ls.split_first().unwrap();
         for arg in args {
-            try!(self.compile_(arg));
+            self.compile_(arg)?;
         }
         self.code
             .push(CodeOPInfo {
                       info: ls[0].info,
                       op: CodeOP::ARGS(args.len()),
                   });
-        try!(self.compile_(lambda));
+        self.compile_(lambda)?;
 
         match lambda.sexpr {
             SExpr::Atom(ref id) => {
@@ -272,11 +272,11 @@ impl Compiler {
             return self.error(&ls[0], "if syntax");
         }
 
-        try!(self.compile_(&ls[1]));
+        self.compile_(&ls[1])?;
 
         let mut tc = Compiler::new();
         tc.letrec_id_list = self.letrec_id_list.clone();
-        try!(tc.compile_(&ls[2]));
+        tc.compile_(&ls[2])?;
         tc.code
             .push(CodeOPInfo {
                       info: ls[2].info,
@@ -285,7 +285,7 @@ impl Compiler {
 
         let mut fc = Compiler::new();
         fc.letrec_id_list = self.letrec_id_list.clone();
-        try!(fc.compile_(&ls[3]));
+        fc.compile_(&ls[3])?;
         fc.code
             .push(CodeOPInfo {
                       info: ls[3].info,
@@ -308,8 +308,8 @@ impl Compiler {
             return self.error(&ls[0], "eq syntax");
         }
 
-        try!(self.compile_(&ls[1]));
-        try!(self.compile_(&ls[2]));
+        self.compile_(&ls[1])?;
+        self.compile_(&ls[2])?;
         self.code
             .push(CodeOPInfo {
                       info: ls[0].info,
@@ -324,8 +324,8 @@ impl Compiler {
             return self.error(&ls[0], "add syntax");
         }
 
-        try!(self.compile_(&ls[1]));
-        try!(self.compile_(&ls[2]));
+        self.compile_(&ls[1])?;
+        self.compile_(&ls[2])?;
         self.code
             .push(CodeOPInfo {
                       info: ls[0].info,
@@ -340,8 +340,8 @@ impl Compiler {
             return self.error(&ls[0], "sub syntax");
         }
 
-        try!(self.compile_(&ls[1]));
-        try!(self.compile_(&ls[2]));
+        self.compile_(&ls[1])?;
+        self.compile_(&ls[2])?;
         self.code
             .push(CodeOPInfo {
                       info: ls[0].info,
@@ -356,8 +356,8 @@ impl Compiler {
             return self.error(&ls[0], "cons syntax");
         }
 
-        try!(self.compile_(&ls[1]));
-        try!(self.compile_(&ls[2]));
+        self.compile_(&ls[1])?;
+        self.compile_(&ls[2])?;
         self.code
             .push(CodeOPInfo {
                       info: ls[0].info,
@@ -372,7 +372,7 @@ impl Compiler {
             return self.error(&ls[0], "car syntax");
         }
 
-        try!(self.compile_(&ls[1]));
+        self.compile_(&ls[1])?;
         self.code
             .push(CodeOPInfo {
                       info: ls[0].info,
@@ -387,7 +387,7 @@ impl Compiler {
             return self.error(&ls[0], "cdr syntax");
         }
 
-        try!(self.compile_(&ls[1]));
+        self.compile_(&ls[1])?;
         self.code
             .push(CodeOPInfo {
                       info: ls[0].info,

@@ -167,7 +167,7 @@ impl Parser {
         let mut list: Vec<Vec<AST>> = vec![vec![]];
 
         loop {
-            match try!(self.next()) {
+            match self.next()? {
                 None => break,
 
                 Some(t) => {
