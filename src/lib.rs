@@ -13,7 +13,7 @@ use std::fs::File;
 use std::io::Read;
 
 pub fn run_lisp(s: &String) -> Result<Rc<Lisp>, Box<Error>> {
-    let ast = &Parser::new(s).parse()?;
+    let ast = Parser::new(s).parse()?;
     let code = Compiler::new().compile(ast)?;
     SECD::new(code).run()
 }
