@@ -5,13 +5,14 @@ use std::collections::HashMap;
 #[derive(Debug, PartialEq)]
 pub struct SECD {
     pub stack: Stack,
-    pub code: Code,
+    pub code: (Code, CodePos),
     pub env: Env,
     pub dump: Dump,
 }
 
 pub type Stack = Vec<Rc<Lisp>>;
-pub type Code = Vec<CodeOPInfo>;
+pub type Code = Rc<Box<[CodeOPInfo]>>;
+pub type CodePos = usize;
 pub type Env = HashMap<String, Rc<Lisp>>;
 pub type Dump = Vec<DumpOP>;
 
@@ -41,7 +42,7 @@ pub enum CodeOP {
     LET(String),
     LD(String),
     LDC(Rc<Lisp>),
-    LDF(Vec<String>, Code),
+    LDF(Rc<Box<[String]>>, Code),
     SEL(Code, Code),
     JOIN,
     RET,
@@ -59,8 +60,8 @@ pub enum CodeOP {
 
 #[derive(Debug, PartialEq)]
 pub enum DumpOP {
-    DumpAP(Stack, Env, Code),
-    DumpSEL(Code),
+    DumpAP(Stack, Env, (Code, CodePos)),
+    DumpSEL((Code, CodePos)),
 }
 
 #[derive(Debug, PartialEq)]
@@ -70,7 +71,7 @@ pub enum Lisp {
     True,
     Int(i32),
     List(Vec<Rc<Lisp>>),
-    Closure(Vec<String>, Code, Env),
+    Closure(Rc<Box<[String]>>, Code, Env),
     Cons(Rc<Lisp>, Rc<Lisp>),
 }
 

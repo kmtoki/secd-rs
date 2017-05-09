@@ -13,7 +13,7 @@ impl SECD {
         SECD {
             stack: Vec::new(),
             env: HashMap::new(),
-            code: c,
+            code: (c, 0),
             dump: Vec::new(),
         }
     }
@@ -28,75 +28,75 @@ impl SECD {
     }
 
     fn run_(&mut self) -> VMResult {
-        while self.code.len() > 0 {
-            let c = self.code.remove(0);
-            let info = c.info;
-            match c.op {
-                CodeOP::LET(id) => {
+        while self.code.0.len() > self.code.1 {
+            let CodeOPInfo{ref op, ref info} = self.code.0.clone()[self.code.1];
+            self.code.1 += 1;
+            match op {
+                &CodeOP::LET(ref id) => {
                     self.run_let(info, id)?;
                 }
 
-                CodeOP::LD(id) => {
+                &CodeOP::LD(ref id) => {
                     self.run_ld(info, id)?;
                 }
 
-                CodeOP::LDC(lisp) => {
+                &CodeOP::LDC(ref lisp) => {
                     self.run_ldc(info, lisp)?;
                 }
 
-                CodeOP::LDF(names, code) => {
+                &CodeOP::LDF(ref names, ref code) => {
                     self.run_ldf(info, names, code)?;
                 }
 
-                CodeOP::RET => {
+                &CodeOP::RET => {
                     self.run_ret(info)?;
                 }
 
-                CodeOP::AP => {
+                &CodeOP::AP => {
                     self.run_ap(info)?;
                 }
 
-                CodeOP::RAP => {
+                &CodeOP::RAP => {
                     self.run_rap(info)?;
                 }
 
-                CodeOP::ARGS(n) => {
+                &CodeOP::ARGS(n) => {
                     self.run_args(info, n)?;
                 }
 
-                CodeOP::PUTS => {
+                &CodeOP::PUTS => {
                     self.run_puts(info)?;
                 }
 
-                CodeOP::SEL(t, f) => {
+                &CodeOP::SEL(ref t, ref f) => {
                     self.run_sel(info, t, f)?;
                 }
 
-                CodeOP::JOIN => {
+                &CodeOP::JOIN => {
                     self.run_join(info)?;
                 }
 
-                CodeOP::EQ => {
+                &CodeOP::EQ => {
                     self.run_eq(info)?;
                 }
 
-                CodeOP::ADD => {
+                &CodeOP::ADD => {
                     self.run_add(info)?;
                 }
 
-                CodeOP::SUB => {
+                &CodeOP::SUB => {
                     self.run_sub(info)?;
                 }
 
-                CodeOP::CONS => {
+                &CodeOP::CONS => {
                     self.run_cons(info)?;
                 }
 
-                CodeOP::CAR => {
+                &CodeOP::CAR => {
                     self.run_car(info)?;
                 }
 
-                CodeOP::CDR => {
+                &CodeOP::CDR => {
                     self.run_cdr(info)?;
                 }
             }
@@ -106,30 +106,30 @@ impl SECD {
     }
 
 
-    fn run_let(&mut self, _: Info, id: String) -> VMResult {
+    fn run_let(&mut self, _: &Info, id: &str) -> VMResult {
         let expr = self.stack.pop().unwrap();
-        self.env.insert(id, expr);
+        self.env.insert(id.to_string(), expr);
         Ok(())
     }
 
-    fn run_ld(&mut self, _: Info, id: String) -> VMResult {
-        let expr = self.env.get(&id).unwrap();
+    fn run_ld(&mut self, _: &Info, id: &str) -> VMResult {
+        let expr = self.env.get(id).unwrap();
         self.stack.push(expr.clone());
         Ok(())
     }
 
-    fn run_ldc(&mut self, _: Info, lisp: Rc<Lisp>) -> VMResult {
-        self.stack.push(lisp);
+    fn run_ldc(&mut self, _: &Info, lisp: &Rc<Lisp>) -> VMResult {
+        self.stack.push(lisp.clone());
         Ok(())
     }
 
-    fn run_ldf(&mut self, _: Info, names: Vec<String>, code: Code) -> VMResult {
+    fn run_ldf(&mut self, _: &Info, names: &Rc<Box<[String]>>, code: &Code) -> VMResult {
         self.stack
-            .push(Rc::new(Lisp::Closure(names, code, self.env.clone())));
+            .push(Rc::new(Lisp::Closure(names.clone(), code.clone(), self.env.clone())));
         Ok(())
     }
 
-    fn run_ap(&mut self, info: Info) -> VMResult {
+    fn run_ap(&mut self, info: &Info) -> VMResult {
         match *self.stack.pop().unwrap() {
             Lisp::Closure(ref names, ref code, ref env) => {
                 match *self.stack.pop().unwrap() {
@@ -141,7 +141,7 @@ impl SECD {
 
                         let stack = mem::replace(&mut self.stack, Vec::new());
                         let env = mem::replace(&mut self.env, env);
-                        let code = mem::replace(&mut self.code, code.clone());
+                        let code = mem::replace(&mut self.code, (code.clone(), 0));
 
                         self.dump.push(DumpOP::DumpAP(stack, env, code));
                     }
@@ -153,7 +153,7 @@ impl SECD {
         Ok(())
     }
 
-    fn run_rap(&mut self, info: Info) -> VMResult {
+    fn run_rap(&mut self, info: &Info) -> VMResult {
         match *self.stack.pop().unwrap() {
             Lisp::Closure(ref names, ref code, ref env) => {
                 match *self.stack.pop().unwrap() {
@@ -164,7 +164,7 @@ impl SECD {
                         }
 
                         let stack = mem::replace(&mut self.stack, Vec::new());
-                        let code = mem::replace(&mut self.code, code.clone());
+                        let code = mem::replace(&mut self.code, (code.clone(), 0));
                         self.dump.push(DumpOP::DumpAP(stack, self.env.clone(), code));
                         self.env.extend(env);
                     }
@@ -178,7 +178,7 @@ impl SECD {
         Ok(())
     }
 
-    fn run_ret(&mut self, info: Info) -> VMResult {
+    fn run_ret(&mut self, info: &Info) -> VMResult {
         let val = self.stack.pop().unwrap();
         match self.dump.pop().unwrap() {
             DumpOP::DumpAP(stack, env, code) => {
@@ -195,22 +195,19 @@ impl SECD {
         }
     }
 
-    fn run_args(&mut self, _: Info, n: usize) -> VMResult {
-        let mut ls = Vec::new();
-        for _ in 0..n {
-            ls.insert(0, self.stack.pop().unwrap());
-        }
-
-        self.stack.push(Rc::new(Lisp::List(ls)));
+    fn run_args(&mut self, _: &Info, n: usize) -> VMResult {
+        let slen = self.stack.len();
+        let args = self.stack.split_off(slen - n);
+        self.stack.push(Rc::new(Lisp::List(args)));
         Ok(())
     }
 
-    fn run_puts(&mut self, _: Info) -> VMResult {
+    fn run_puts(&mut self, _: &Info) -> VMResult {
         println!("{}", *self.stack.last().unwrap());
         Ok(())
     }
 
-    fn run_sel(&mut self, info: Info, t: Code, f: Code) -> VMResult {
+    fn run_sel(&mut self, info: &Info, t: &Code, f: &Code) -> VMResult {
         let b = self.stack.pop().unwrap();
         let code = match *b {
             Lisp::True => t,
@@ -218,13 +215,13 @@ impl SECD {
             _ => return self.error(&info, "SEL: expected bool"),
         };
 
-        let code = mem::replace(&mut self.code, code);
+        let code = mem::replace(&mut self.code, (code.clone(), 0));
         self.dump.push(DumpOP::DumpSEL(code));
 
         Ok(())
     }
 
-    fn run_join(&mut self, info: Info) -> VMResult {
+    fn run_join(&mut self, info: &Info) -> VMResult {
         if let DumpOP::DumpSEL(code) = self.dump.pop().unwrap() {
             self.code = code;
             Ok(())
@@ -233,7 +230,7 @@ impl SECD {
         }
     }
 
-    fn run_eq(&mut self, _: Info) -> VMResult {
+    fn run_eq(&mut self, _: &Info) -> VMResult {
         let a = self.stack.pop().unwrap();
         let b = self.stack.pop().unwrap();
         self.stack
@@ -241,7 +238,7 @@ impl SECD {
         Ok(())
     }
 
-    fn run_add(&mut self, info: Info) -> VMResult {
+    fn run_add(&mut self, info: &Info) -> VMResult {
         let a = self.stack.pop().unwrap();
         if let Lisp::Int(n) = *a {
             let b = self.stack.pop().unwrap();
@@ -256,7 +253,7 @@ impl SECD {
         }
     }
 
-    fn run_sub(&mut self, info: Info) -> VMResult {
+    fn run_sub(&mut self, info: &Info) -> VMResult {
         let a = self.stack.pop().unwrap();
         if let Lisp::Int(n) = *a {
             let b = self.stack.pop().unwrap();
@@ -271,14 +268,14 @@ impl SECD {
         }
     }
 
-    fn run_cons(&mut self, _: Info) -> VMResult {
+    fn run_cons(&mut self, _: &Info) -> VMResult {
         let a = self.stack.pop().unwrap();
         let b = self.stack.pop().unwrap();
         self.stack.push(Rc::new(Lisp::Cons(b, a)));
         Ok(())
     }
 
-    fn run_car(&mut self, info: Info) -> VMResult {
+    fn run_car(&mut self, info: &Info) -> VMResult {
         let a = self.stack.pop().unwrap();
         if let Lisp::Cons(ref car, _) = *a {
             self.stack.push(car.clone());
@@ -288,7 +285,7 @@ impl SECD {
         }
     }
 
-    fn run_cdr(&mut self, info: Info) -> VMResult {
+    fn run_cdr(&mut self, info: &Info) -> VMResult {
         let a = self.stack.pop().unwrap();
         if let Lisp::Cons(_, ref cdr) = *a {
             self.stack.push(cdr.clone());

@@ -4,7 +4,7 @@ use std::rc::Rc;
 use std::error::Error;
 
 pub struct Compiler {
-    pub code: Code,
+    pub code: Vec<CodeOPInfo>,
     letrec_id_list: Vec<String>,
 }
 
@@ -45,7 +45,7 @@ impl Compiler {
 
     pub fn compile(&mut self, ast: AST) -> Result<Code, Box<Error>> {
         self.compile_(ast)?;
-        Ok(self.code.clone())
+        Ok(Rc::new(self.code.clone().into_boxed_slice()))
     }
 
     pub fn compile_(&mut self, ast: AST) -> CompilerResult {
@@ -199,7 +199,8 @@ impl Compiler {
         self.code
             .push(CodeOPInfo {
                       info: info,
-                      op: CodeOP::LDF(args, body_compiler.code),
+                      op: CodeOP::LDF(Rc::new(args.into_boxed_slice()),
+                                      Rc::new(body_compiler.code.into_boxed_slice())),
                   });
 
         Ok(())
@@ -354,7 +355,8 @@ impl Compiler {
         self.code
             .push(CodeOPInfo {
                       info: info,
-                      op: CodeOP::SEL(tc.code, fc.code),
+                      op: CodeOP::SEL(Rc::new(tc.code.into_boxed_slice()),
+                                      Rc::new(fc.code.into_boxed_slice())),
                   });
 
         Ok(())
