@@ -9,125 +9,125 @@ type VMResult = Result<(), Box<Error>>;
 
 impl SECD {
     pub fn new(c: Code) -> SECD {
-        return SECD {
-                   stack: vec![],
-                   env: HashMap::new(),
-                   code: c,
-                   dump: vec![],
-               };
+        SECD {
+            stack: Vec::new(),
+            env: HashMap::new(),
+            code: c,
+            dump: Vec::new(),
+        }
     }
 
     fn error(&self, i: Info, msg: &str) -> VMResult {
-        return Err(From::from(format!("{}:{}:vm error: {}", i[0], i[1], msg)));
+        Err(From::from(format!("{}:{}:vm error: {}", i[0], i[1], msg)))
     }
 
     pub fn run(&mut self) -> Result<Rc<Lisp>, Box<Error>> {
-        try!(self.run_());
-        return Ok(self.stack.last().unwrap().clone());
+        self.run_()?;
+        Ok(self.stack.last().unwrap().clone())
     }
 
     fn run_(&mut self) -> VMResult {
         while self.code.len() > 0 {
             let c = self.code.remove(0);
-            match c.op { 
+            match c.op {
                 CodeOP::LET(id) => {
-                    try!(self.run_let(c.info, id));
+                    self.run_let(c.info, id)?;
                 }
 
                 CodeOP::LD(id) => {
-                    try!(self.run_ld(c.info, id));
+                    self.run_ld(c.info, id)?;
                 }
 
                 CodeOP::LDC(lisp) => {
-                    try!(self.run_ldc(c.info, lisp));
+                    self.run_ldc(c.info, lisp)?;
                 }
 
                 CodeOP::LDF(names, code) => {
-                    try!(self.run_ldf(c.info, names, code));
+                    self.run_ldf(c.info, names, code)?;
                 }
 
                 CodeOP::RET => {
-                    try!(self.run_ret(c.info));
+                    self.run_ret(c.info)?;
                 }
 
                 CodeOP::AP => {
-                    try!(self.run_ap(c.info));
+                    self.run_ap(c.info)?;
                 }
 
                 CodeOP::RAP => {
-                    try!(self.run_rap(c.info));
+                    self.run_rap(c.info)?;
                 }
 
                 CodeOP::ARGS(n) => {
-                    try!(self.run_args(c.info, n));
+                    self.run_args(c.info, n)?;
                 }
 
                 CodeOP::PUTS => {
-                    try!(self.run_puts(c.info));
+                    self.run_puts(c.info)?;
                 }
 
                 CodeOP::SEL(ref t, ref f) => {
-                    try!(self.run_sel(c.info, t, f));
+                    self.run_sel(c.info, t, f)?;
                 }
 
                 CodeOP::JOIN => {
-                    try!(self.run_join(c.info));
+                    self.run_join(c.info)?;
                 }
 
                 CodeOP::EQ => {
-                    try!(self.run_eq(c.info));
+                    self.run_eq(c.info)?;
                 }
 
                 CodeOP::ADD => {
-                    try!(self.run_add(c.info));
+                    self.run_add(c.info)?;
                 }
 
                 CodeOP::SUB => {
-                    try!(self.run_sub(c.info));
+                    self.run_sub(c.info)?;
                 }
 
                 CodeOP::CONS => {
-                    try!(self.run_cons(c.info));
+                    self.run_cons(c.info)?;
                 }
 
                 CodeOP::CAR => {
-                    try!(self.run_car(c.info));
+                    self.run_car(c.info)?;
                 }
 
                 CodeOP::CDR => {
-                    try!(self.run_cdr(c.info));
+                    self.run_cdr(c.info)?;
                 }
             }
         }
 
-        return Ok(());
+        Ok(())
     }
 
 
     fn run_let(&mut self, _: Info, id: String) -> VMResult {
         let expr = self.stack.pop().unwrap();
         self.env.insert(id, expr);
-        return Ok(());
+        Ok(())
     }
 
     fn run_ld(&mut self, _: Info, id: String) -> VMResult {
         let expr = self.env.get(&id).unwrap();
         self.stack.push(expr.clone());
-        return Ok(());
+        Ok(())
     }
 
     fn run_ldc(&mut self, _: Info, lisp: Rc<Lisp>) -> VMResult {
         self.stack.push(lisp);
-        return Ok(());
+        Ok(())
     }
 
     fn run_ldf(&mut self, _: Info, names: Vec<String>, code: Code) -> VMResult {
         self.stack
             .push(Rc::new(Lisp::Closure(names, code, self.env.clone())));
-        return Ok(());
+        Ok(())
     }
 
-    fn run_ap(mut self, c: Info) -> VMResult {
+    fn run_ap(&mut self, c: Info) -> VMResult {
         match *self.stack.pop().unwrap() {
             Lisp::Closure(ref names, ref code, ref env) => {
                 match *self.stack.pop().unwrap() {
@@ -142,11 +142,9 @@ impl SECD {
                                                  self.env.clone(),
                                                  self.code.clone()));
 
-                        self.stack = vec![];
+                        self.stack = Vec::new();
                         self.env = env;
                         self.code = code.clone();
-
-                        return Ok(());
                     }
                     _ => return self.error(c, "AP: expected List"),
                 }
@@ -154,6 +152,7 @@ impl SECD {
 
             _ => return self.error(c, "AP: expected Closure"),
         }
+        Ok(())
     }
 
     fn run_rap(&mut self, c: Info) -> VMResult {
@@ -171,11 +170,9 @@ impl SECD {
                                                  self.env.clone(),
                                                  self.code.clone()));
 
-                        self.stack = vec![];
+                        self.stack = Vec::new();
                         self.env.extend(env);
                         self.code = code.clone();
-
-                        return Ok(());
                     }
 
                     _ => return self.error(c, "RAP: expected List"),
@@ -184,6 +181,7 @@ impl SECD {
 
             _ => return self.error(c, "RAP: expected Closure"),
         }
+        Ok(())
     }
 
     fn run_ret(&mut self, c: Info) -> VMResult {
@@ -196,26 +194,26 @@ impl SECD {
 
                 self.stack.push(a.clone());
 
-                return Ok(());
+                Ok(())
             }
 
-            _ => return self.error(c, "RET: expected DumpAP"),
+            _ => self.error(c, "RET: expected DumpAP"),
         }
     }
 
     fn run_args(&mut self, _: Info, n: usize) -> VMResult {
-        let mut ls = vec![];
+        let mut ls = Vec::new();
         for _ in 0..n {
             ls.insert(0, self.stack.pop().unwrap());
         }
 
         self.stack.push(Rc::new(Lisp::List(ls)));
-        return Ok(());
+        Ok(())
     }
 
     fn run_puts(&mut self, _: Info) -> VMResult {
         println!("{}", *self.stack.last().unwrap());
-        return Ok(());
+        Ok(())
     }
 
     fn run_sel(&mut self, c: Info, t: &Code, f: &Code) -> VMResult {
@@ -230,16 +228,16 @@ impl SECD {
 
         self.code = code.clone();
 
-        return Ok(());
+        Ok(())
     }
 
     fn run_join(&mut self, c: Info) -> VMResult {
         if let DumpOP::DumpSEL(ref code) = self.dump.pop().unwrap() {
             self.code = code.clone();
 
-            return Ok(());
+            Ok(())
         } else {
-            return self.error(c, "JOIN: expected DumpSEL");
+            self.error(c, "JOIN: expected DumpSEL")
         }
     }
 
@@ -249,7 +247,7 @@ impl SECD {
         self.stack
             .push(Rc::new(if a == b { Lisp::True } else { Lisp::False }));
 
-        return Ok(());
+        Ok(())
     }
 
     fn run_add(&mut self, c: Info) -> VMResult {
@@ -259,12 +257,12 @@ impl SECD {
             if let Lisp::Int(m) = *b {
                 self.stack.push(Rc::new(Lisp::Int(m + n)));
 
-                return Ok(());
+                Ok(())
             } else {
-                return self.error(c, "ADD: expected int");
+                self.error(c, "ADD: expected int")
             }
         } else {
-            return self.error(c, "ADD: expected int");
+            self.error(c, "ADD: expected int")
         }
     }
 
@@ -275,12 +273,12 @@ impl SECD {
             if let Lisp::Int(o) = *b {
                 self.stack.push(Rc::new(Lisp::Int(o - n)));
 
-                return Ok(());
+                Ok(())
             } else {
-                return self.error(c, "SUB: expected int");
+                self.error(c, "SUB: expected int")
             }
         } else {
-            return self.error(c, "SUB: expected int");
+            self.error(c, "SUB: expected int")
         }
     }
 
@@ -289,7 +287,7 @@ impl SECD {
         let b = self.stack.pop().unwrap();
         self.stack.push(Rc::new(Lisp::Cons(b, a)));
 
-        return Ok(());
+        Ok(())
     }
 
     fn run_car(&mut self, c: Info) -> VMResult {
@@ -297,9 +295,9 @@ impl SECD {
         if let Lisp::Cons(ref car, _) = *a {
             self.stack.push(car.clone());
 
-            return Ok(());
+            Ok(())
         } else {
-            return self.error(c, "CAR: expected Cons");
+            self.error(c, "CAR: expected Cons")
         }
     }
 
@@ -308,9 +306,9 @@ impl SECD {
         if let Lisp::Cons(_, ref cdr) = *a {
             self.stack.push(cdr.clone());
 
-            return Ok(());
+            Ok(())
         } else {
-            return self.error(c, "CDR: expected Cons");
+            self.error(c, "CDR: expected Cons")
         }
     }
 }
